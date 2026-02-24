@@ -1,8 +1,9 @@
-version: '3'
+#version: '3'
 
 services:
   kafka:
-    image: 'soldevelo/kafka:latest'
+    #image: 'soldevelo/kafka:latest'
+    image: 'soldevelo/kafka:3.9'
     ports:
       - '9094:9094'
     networks:
