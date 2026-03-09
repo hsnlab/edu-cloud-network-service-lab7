@@ -53,6 +53,7 @@ def get_all_data(last_processed_timestamp: datetime.datetime) -> List[dict]:
         # corresponds to the number of results already processed.
         url = URL_API.format(last_processed_timestamp, n_results)
         response = requests.get(url)
+        response.raise_for_status()
         data = response.json()
         current_results = data["results"]
         full_data.extend(current_results)
