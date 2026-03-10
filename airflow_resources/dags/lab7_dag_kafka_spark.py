@@ -19,7 +19,7 @@ default_args = {
 
 
 with DAG(
-    dag_id="kafka_spark_dag",
+    dag_id="Lab7_dag_kafka_spark",
     default_args=default_args,
     schedule_interval=timedelta(days=1),
     catchup=False,

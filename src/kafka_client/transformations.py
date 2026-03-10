@@ -4,7 +4,7 @@ from src.constants import COLUMNS_TO_NORMALIZE, COLUMNS_TO_KEEP
 
 
 def merge_two_columns(
-    col_a: str, col_b: str, row: dict, normalize: bool = True
+        col_a: str, col_b: str, row: dict, normalize: bool = True
 ) -> dict:
     val_col_a = row.get(col_a)
     val_col_b = row.get(col_b)
@@ -21,8 +21,16 @@ def merge_two_columns(
     return final
 
 
+def flatten_column(col: str, row: dict, normalize: bool = True) -> str:
+    final = " ".join(val for val in row.get(col, []))
+    final = final or None
+    if final and normalize:
+        final = normalize_one(final)
+    return final
+
+
 def separate_commercialisation_dates(row: dict) -> tuple:
-    date_debut_fin = row.get("date_debut_fin_de_commercialisation")
+    date_debut_fin = row.get("date_date_fin_commercialisation")
     if not date_debut_fin:
         return None, None
 
@@ -65,8 +73,8 @@ def transform_row(api_row: dict) -> dict:
     kafka_row = normalize_columns(api_row)
 
     kafka_row["risques_pour_le_consommateur"] = merge_two_columns(
-        "risques_encourus_par_le_consommateur",
-        "description_complementaire_du_risque",
+        "risques_encourus",
+        "description_complementaire_risque",
         api_row,
     )
     kafka_row["recommandations_sante"] = merge_two_columns(
@@ -79,7 +87,10 @@ def transform_row(api_row: dict) -> dict:
         "informations_complementaires_publiques",
         api_row,
     )
-    sep_columns = separate_commercialisation_dates(api_row)
-    kafka_row["date_debut_commercialisation"] = sep_columns[0]
-    kafka_row["date_fin_commercialisation"] = sep_columns[1]
+    # sep_columns = separate_commercialisation_dates(api_row)
+    # kafka_row["date_debut_commercialisation"] = sep_columns[0]
+    # kafka_row["date_fin_commercialisation"] = sep_columns[1]
+
+    kafka_row["identification_produits"] = flatten_column("identification_produits", api_row)
+
     return kafka_row

@@ -36,7 +36,7 @@ def update_last_processed_file(data: List[dict]):
     on the field date_de_publication, we set the new last_processed day to the latest timestamp minus one day.
     """
     publication_dates_as_timestamps = [
-        datetime.datetime.strptime(row["date_de_publication"], "%Y-%m-%d")
+        datetime.datetime.strptime(row["date_publication"].split('T')[0], "%Y-%m-%d")
         for row in data
     ]
     last_processed = max(publication_dates_as_timestamps) - datetime.timedelta(days=1)
@@ -45,27 +45,29 @@ def update_last_processed_file(data: List[dict]):
         json.dump({"last_processed": last_processed_as_string}, file)
 
 
-def get_all_data(last_processed_timestamp: datetime.datetime) -> List[dict]:
+def get_all_data(last_processed_timestamp: datetime.datetime, debug: bool = False) -> List[dict]:
     n_results = 0
     full_data = []
     while True:
         # The publication date must be greater than the last processed timestamp and the offset (n_results)
         # corresponds to the number of results already processed.
         url = URL_API.format(last_processed_timestamp, n_results)
+        logging.info(f"Used URL: {url}")
         response = requests.get(url)
-        response.raise_for_status()
         data = response.json()
+        response.raise_for_status()
         current_results = data["results"]
         full_data.extend(current_results)
         n_results += len(current_results)
-        if len(current_results) < MAX_LIMIT:
+        logging.info(f"Read data: {len(current_results)} -> {n_results}")
+        if len(current_results) < MAX_LIMIT or debug:
             break
         # The sum of offset + limit API parameter must be lower than 10000.
         if n_results + MAX_LIMIT >= MAX_OFFSET:
-            # If it is the case, change the last_processed_timestamp parameter to the date_de_publication
+            # If it is the case, change the last_processed_timestamp parameter to the date_publication
             # of the last retrieved result, minus one day. In case of duplicates, they will be filtered
             # in the deduplicate_data function. We also reset n_results (or the offset parameter) to 0.
-            last_timestamp = current_results[-1]["date_de_publication"]
+            last_timestamp = current_results[-1]["date_publication"].split('T')[0]
             timestamp_as_date = datetime.datetime.strptime(last_timestamp, "%Y-%m-%d")
             timestamp_as_date = timestamp_as_date - datetime.timedelta(days=1)
             last_processed_timestamp = timestamp_as_date.strftime("%Y-%m-%d")
@@ -77,17 +79,17 @@ def get_all_data(last_processed_timestamp: datetime.datetime) -> List[dict]:
 
 
 def deduplicate_data(data: List[dict]) -> List[dict]:
-    return list({v["reference_fiche"]: v for v in data}.values())
+    return list({v["numero_fiche"]: v for v in data}.values())
 
 
-def query_data() -> List[dict]:
+def query_data(debug: bool = False) -> List[dict]:
     """
     Queries the data from the API
     """
     last_processed = get_latest_timestamp()
-    full_data = get_all_data(last_processed)
+    full_data = get_all_data(last_processed_timestamp=last_processed, debug=debug)
     full_data = deduplicate_data(full_data)
-    if full_data:
+    if full_data and not debug:
         update_last_processed_file(full_data)
     return full_data
 
@@ -115,16 +117,18 @@ def create_kafka_producer():
     return producer
 
 
-def stream():
+def stream(debug: bool = False):
     """
     Writes the API data to Kafka topic rappel_conso
     """
+    if debug:
+        logging.warning("Run in debug mode")
     producer = create_kafka_producer()
-    results = query_data()
+    results = query_data(debug=debug)
     kafka_data_full = map(process_data, results)
     for kafka_data in kafka_data_full:
         producer.send("rappel_conso", json.dumps(kafka_data).encode("utf-8"))
 
 
 if __name__ == "__main__":
-    stream()
+    stream(debug=True)
