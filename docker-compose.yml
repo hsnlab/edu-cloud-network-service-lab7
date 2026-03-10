@@ -31,13 +31,26 @@ services:
     networks:
       - airflow-kafka
 
-  docker-proxy:
-    image: alpine/socat
-    command: "TCP4-LISTEN:2375,fork,reuseaddr UNIX-CONNECT:/var/run/docker.sock"
-    ports:
-      - "2376:2375"
+#  docker-proxy:
+#    image: alpine/socat
+#    command: "TCP4-LISTEN:2375,fork,reuseaddr UNIX-CONNECT:/var/run/docker.sock"
+#    ports:
+#      - "2376:2375"
+#    volumes:
+#      - /var/run/docker.sock:/var/run/docker.sock
+#    networks:
+#      - airflow-kafka
+  docker-socker-proxy:
+    image: technativa/docker-socket-proxy:0.4
+    environment:
+      CONTAINERS: 1
+      IMAGES: 1
+      AUTH: 1
+      POSt: 1
+    privileged: true
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: always
     networks:
       - airflow-kafka
 

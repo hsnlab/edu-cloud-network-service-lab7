@@ -34,7 +34,7 @@ with DAG(
     spark_stream_task = DockerOperator(
         task_id="pyspark_consumer",
         image="rappel-conso/spark:latest",
-        api_version="auto",
+        api_version="1.37",
         auto_remove=True,
         command="./bin/spark-submit --master local[*] --packages org.postgresql:postgresql:42.5.4,org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0 ./spark_streaming.py",
         docker_url='tcp://docker-proxy:2375',
