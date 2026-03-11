@@ -1,19 +1,20 @@
+import datetime
+import json
+import logging
+from typing import List
+
+import kafka.errors
+import requests
+from kafka import KafkaProducer
+
 from src.constants import (
     URL_API,
     PATH_LAST_PROCESSED,
     MAX_LIMIT,
     MAX_OFFSET,
+    MOCK_API, MAX_RESULTS,
 )
-
 from .transformations import transform_row
-
-import kafka.errors
-import json
-import datetime
-import requests
-from kafka import KafkaProducer
-from typing import List
-import logging
 
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO, force=True)
 
@@ -55,12 +56,19 @@ def get_all_data(last_processed_timestamp: datetime.datetime, debug: bool = Fals
         logging.info(f"Used URL: {url}")
         response = requests.get(url)
         data = response.json()
+        if response.status_code >= 300:
+            url = MOCK_API.format(last_processed_timestamp, n_results)
+            logging.info(f"Used mockup URL: {url}")
+            response = requests.get(url)
+            data = response.json()
         response.raise_for_status()
         current_results = data["results"]
         full_data.extend(current_results)
         n_results += len(current_results)
         logging.info(f"Read data: {len(current_results)} -> {n_results}")
         if len(current_results) < MAX_LIMIT or debug:
+            break
+        if n_results >= MAX_RESULTS:
             break
         # The sum of offset + limit API parameter must be lower than 10000.
         if n_results + MAX_LIMIT >= MAX_OFFSET:

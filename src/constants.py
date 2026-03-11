@@ -4,6 +4,7 @@ import os
 PATH_LAST_PROCESSED = "./data/last_processed.json"
 MAX_LIMIT = 100
 MAX_OFFSET = 10000
+MAX_RESULTS = 12000
 
 # We have three parameters in the URL:
 # 1. MAX_LIMIT: the maximum number of records to be returned by the API
@@ -11,6 +12,9 @@ MAX_OFFSET = 10000
 # 3. offset: the index of the first result
 URL_API = "https://data.economie.gouv.fr/api/explore/v2.1/catalog/datasets/rappelconso-v2-gtin-espaces/records?limit={}&where=date_publication%20%3E%20'{}'&order_by=date_publication%20ASC&offset={}"
 URL_API = URL_API.format(MAX_LIMIT, "{}", "{}")
+
+MOCK_API = "http://mock-api:8888/api/records?limit={}&where=date_publication%20%3E%20'{}'&order_by=date_publication%20ASC&offset={}"
+MOCK_API = MOCK_API.format(MAX_LIMIT, "{}", "{}")
 
 # POSTGRES PARAMS
 user_name = os.getenv("POSTGRES_DOCKER_USER", "localhost")
@@ -56,4 +60,5 @@ COLUMNS_TO_KEEP = [
     "date_date_fin_commercialisation",
     "date_de_fin_de_la_procedure_de_rappel",
 ]
+
 DB_FIELDS = COLUMNS_TO_KEEP + COLUMNS_TO_NORMALIZE + NEW_COLUMNS

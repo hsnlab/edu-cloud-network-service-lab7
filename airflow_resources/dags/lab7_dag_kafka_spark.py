@@ -34,8 +34,9 @@ with DAG(
     spark_stream_task = DockerOperator(
         task_id="pyspark_consumer",
         image="rappel-conso/spark:latest",
-        api_version="1.37",
+        api_version="auto",
         auto_remove=True,
+        mount_tmp_dir=False,
         command="./bin/spark-submit --master local[*] --packages org.postgresql:postgresql:42.5.4,org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0 ./spark_streaming.py",
         docker_url='tcp://docker-proxy:2375',
         environment={'SPARK_LOCAL_HOSTNAME': 'localhost'},

@@ -1,6 +1,7 @@
 services:
 
   kafka:
+    container_name: lab7-kafka
     image: soldevelo/kafka:3.9
     ports:
       - '9094:9094'
@@ -18,7 +19,7 @@ services:
       - ./kafka:/bitnami/kafka
 
   kafka-ui:
-    container_name: kafka-ui-1
+    container_name: lab7-kafka-ui
     image: provectuslabs/kafka-ui:latest
     ports:
       - "8000:8080"
@@ -31,29 +32,41 @@ services:
     networks:
       - airflow-kafka
 
-#  docker-proxy:
-#    image: alpine/socat
-#    command: "TCP4-LISTEN:2375,fork,reuseaddr UNIX-CONNECT:/var/run/docker.sock"
-#    ports:
-#      - "2376:2375"
-#    volumes:
-#      - /var/run/docker.sock:/var/run/docker.sock
-#    networks:
-#      - airflow-kafka
-  docker-socker-proxy:
-    image: technativa/docker-socket-proxy:0.4
-    environment:
-      CONTAINERS: 1
-      IMAGES: 1
-      AUTH: 1
-      POSt: 1
-    privileged: true
+  docker-proxy:
+    container_name: lab7-docker-proxy
+    image: alpine/socat
+    command: "TCP4-LISTEN:2375,fork,reuseaddr UNIX-CONNECT:/var/run/docker.sock"
+    ports:
+      - "2376:2375"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    restart: always
+      - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - airflow-kafka
+  #  docker-socker-proxy:
+  #    image: technativa/docker-socket-proxy:0.4
+  #    environment:
+  #      CONTAINERS: 1
+  #      IMAGES: 1
+  #      AUTH: 1
+  #      POSt: 1
+  #    privileged: true
+  #    volumes:
+  #      - /var/run/docker.sock:/var/run/docker.sock:ro
+  #    restart: always
+  #    networks:
+  #      - airflow-kafka
 
+  mock-api:
+    container_name: lab7-mock-api
+    build:
+      context: ./mock-api
+      dockerfile: Dockerfile
+    image: rappel-conso/mock-api:0.1
+    restart: always
+    ports:
+      - "8888:8888"
+    networks:
+      - airflow-kafka
 
 networks:
   airflow-kafka:
